@@ -8,7 +8,7 @@ class FileCacher:
     MEMCACHE_CONFIG = configparser.ConfigParser()
     MEMCACHE_CONFIG.read('config.ini')
     FILE_SIZE_LIMIT = 524238800
-    CHUNK_SIZE = 1048576
+    CHUNK_SIZE = 1000000
 
     def __init__(self):
         server_address = self.MEMCACHE_CONFIG['DEFAULT']['server_address']
@@ -16,33 +16,33 @@ class FileCacher:
         self.memcache_client = Client((server_address, port))
         self.cache_keys = {}
         
-    def store(self, file_path):
+    def store(self, name, infile):
         """
         Store a file to memcache
 
         :param file_path: Path to the file being stored
         :return: A tuple with a list of keys and a success flag
         """
-        if self._check_file_size(file_path) > self.FILE_SIZE_LIMIT:
+        if self._check_file_size(infile) > self.FILE_SIZE_LIMIT:
             raise ValueError('File size exceeds the 50 mb limit')
-        self.cache_keys[file_path], statuses = [], []
-        with open(file_path, 'rb') as file:
+        self.cache_keys[name], statuses = [], []
+        with open(infile, 'rb') as file:
             if file:
                 for chunk_index, file_chunk in enumerate(iter(lambda: file.read(self.CHUNK_SIZE), b'')):
-                    key = f'{file_path}_chunk{chunk_index}'
+                    key = f'{name}_chunk{chunk_index}'
                     status = self.memcache_client.set(key, file_chunk)
-                    self.cache_keys[file_path].append(key)
+                    self.cache_keys[name].append(key)
                     statuses.append(status)
         return all(statuses)
 
-    def retrieve(self, name):
+    def retrieve(self, name, outfile):
         """
-        Retrieve a file from memcache given a set of cache keys.
+        Retrieve a file from memcache given a name.
         """
         cache_keys = self.cache_keys.get(name)
         file_chunks = self.memcache_client.get_many(cache_keys)
         file_contents = b''.join(file_chunks.values())
-        with open(name, 'wb') as file:
+        with open(outfile, 'wb') as file:
             file.write(file_contents)
             return file
 

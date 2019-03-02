@@ -4,11 +4,16 @@ from file_cacher import FileCacher
 file_cacher = FileCacher()
 
 def store(name, infile):
-    return file_cacher.store(name)
-
+    if file_cacher.store(name, infile):
+        print(f'{infile} successfully saved to cache')
+    else:
+        print(f'There was an error storing {infile}')
 
 def retrieve(name, outfile):
-    return file_cacher.retrieve(name)
+    if file_cacher.retrieve(name, outfile):
+        print(f'{name} successfully retrieved from cache and can be accessed at {outfile}')
+    else:
+        print(f'{name} could not be retrieved')
 
 def main():
     """ Process Command Line Arguments """
