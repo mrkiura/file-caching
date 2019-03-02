@@ -1,0 +1,2 @@
+pymemcache==2.1.1
+six==1.12.0
