@@ -14,9 +14,11 @@ class FileCacherTestCase(unittest.TestCase):
             self.file_cacher_client.store(self.very_large_file)
 
     def test_storing_a_large_file(self):
-        self.assertTrue(self.file_cacher_client.store(self.large_file)[1])
+        self.assertTrue(self.file_cacher_client.store(self.large_file))
 
-    def test_retrieving
+    def test_retrieving(self):
+        self.assertIsNotNone(self.file_cacher_client.retrieve(self.large_file))
+
 
 if __name__ == '__main__':
     unittest.main()
