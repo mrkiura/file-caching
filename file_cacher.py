@@ -12,8 +12,9 @@ class FileCacher:
 
     def __init__(self):
         server_address = self.MEMCACHE_CONFIG['DEFAULT']['server_address']
-        port = self.MEMCACHE_CONFIG['DEFAULT']['port']
+        port = int(self.MEMCACHE_CONFIG['DEFAULT']['port'])
         self.memcache_client = Client((server_address, port))
+        self.cache_keys = {}
         
     def store(self, file_path):
         """
@@ -24,27 +25,26 @@ class FileCacher:
         """
         if self._check_file_size(file_path) > self.FILE_SIZE_LIMIT:
             raise ValueError('File size exceeds the 50 mb limit')
-        keys, statuses = [], []
+        self.cache_keys[file_path], statuses = [], []
         with open(file_path, 'rb') as file:
             if file:
                 for chunk_index, file_chunk in enumerate(iter(lambda: file.read(self.CHUNK_SIZE), b'')):
-                    key = file_path + chunk_index
+                    key = f'{file_path}_chunk{chunk_index}'
                     status = self.memcache_client.set(key, file_chunk)
-                    keys.append(key)
+                    self.cache_keys[file_path].append(key)
                     statuses.append(status)
-        return keys, all(statuses)
+        return all(statuses)
 
-    def retrieve(self, filename, cache_keys):
+    def retrieve(self, name):
         """
-        Retrieve a file from memcache.
+        Retrieve a file from memcache given a set of cache keys.
         """
-        pass
+        cache_keys = self.cache_keys.get(name)
+        file_chunks = self.memcache_client.get_many(cache_keys)
+        file_contents = b''.join(file_chunks.values())
+        with open(name, 'wb') as file:
+            file.write(file_contents)
+            return file
 
     def _check_file_size(self, file_path):
         return os.path.getsize(file_path)
-
-    def _store_to_memcache(self):
-        pass
-
-    def _retrieve_from_memcache(self):
-        pass
